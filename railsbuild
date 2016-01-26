@@ -34,6 +34,13 @@ if [ "$3" = "" ] || [ "$2" = "" ] || [ "$1" = "" ]; then
   exit 1
 fi
 
+[[ "$4" ]] && {
+  echo "Error: railsbuild takes exactly 3 parameters"
+  print_help
+  exit 1
+
+}
+
 FEDORA_VERSION=$1
 OLD_RAILS_VERSION=$2
 NEW_RAILS_VERSION=$3
