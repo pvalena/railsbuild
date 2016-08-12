@@ -4,7 +4,7 @@
 RAILSBUILD_VERSION=0.4
 
 # Fedora master branch
-FEDORA_RAWHIDE=25
+FEDORA_RAWHIDE=26
 
 # Ruby on Rails gems
 GEMS=(activesupport
@@ -14,6 +14,7 @@ GEMS=(activesupport
       actionview
       actionpack
       actionmailer
+      actioncable
       railties
       rails)
 
