@@ -24,7 +24,13 @@ do
   fi
 
   # Disable bootstrapping
-  sed -i -e "s/%global bootstrap 1/%global bootstrap 0/" rubygem-$gem.spec
+  WITH_BOOTSTRAP="`sed -n 's/^%{?_with_bootstrap: \([^}]\+\)}[^\n]*/\1/p' rubygem-$gem.spec`"
+  [[ "$WITH_BOOTSTRAP" ]] || {
+    echo "= FAIL ======"
+    echo "$gem: _with_bootstrap macro is missing"
+    exit 1
+  }
+  sed -i "/^$WITH_BOOTSTRAP$/d" rubygem-$gem.spec
   sed -i -e "s/Release:.*/Release: 2%{?dist}/g" rubygem-$gem.spec
 
   # Set to default locale for the changelog date format
