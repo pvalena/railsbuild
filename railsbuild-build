@@ -34,10 +34,16 @@ do
         exit 1
     fi
 
-    rm *.src.rpm
-    fedpkg scratch-build --srpm
+    [[ -r .scratch-built && -r "`ls rubygem-$gem-*.src.rpm`" ]] && {
+      echo "$gem: Already scratch-built"
+      RE=0
+    } || {
+      rm *.src.rpm
+      fedpkg scratch-build --srpm
+      RE=$?
+    }
 
-    if [ "$?" = "0" ]; then
+    if [ $RE -eq 0 ]; then
       touch .scratch-built
       git stash
       echo "= SUCCESS ======"
