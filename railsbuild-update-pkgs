@@ -51,7 +51,7 @@ do
   CHANGELOG+=" "
   CHANGELOG+=`rpmdev-packager`
   CHANGELOG+=" - $epoch_prefix$NEW_VERSION-1\n"
-  CHANGELOG+="- Update to $gem $NEW_VERSION"
+  CHANGELOG+="- Update to ${gem^} $NEW_VERSION"
 
   sed -i -e "s/%changelog/%changelog\n$CHANGELOG\n/g" rubygem-$gem.spec
   echo "$gem: rubygem-$gem.spec updated"
