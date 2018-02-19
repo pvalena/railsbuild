@@ -26,14 +26,16 @@ do
   #   continue
   #fi
 
-  cd ~/.railsbuild/upstream/rails/$gem
-  tar czvf $gem-$VERSION-tests.tgz test/
-  cp $gem-$VERSION-tests.tgz ~/.railsbuild/f$FEDORA_VERSION/rubygem-$gem/.
+  cd ~/.railsbuild/upstream/rails/$gem && {
+    tar czvf $gem-$VERSION-tests.tgz test/
+    cp $gem-$VERSION-tests.tgz ~/.railsbuild/f$FEDORA_VERSION/rubygem-$gem/.
 
-  [[ -d app && -r Rakefile ]] && {
-    tar czvf $gem-$VERSION-app.tgz app/ Rakefile
-    cp $gem-$VERSION-app.tgz ~/.railsbuild/f$FEDORA_VERSION/rubygem-$gem/.
+    [[ -d app && -r Rakefile ]] && {
+      tar czvf $gem-$VERSION-app.tgz app/ Rakefile
+      cp $gem-$VERSION-app.tgz ~/.railsbuild/f$FEDORA_VERSION/rubygem-$gem/.
+    }
   }
 
 done
 
+exit 0

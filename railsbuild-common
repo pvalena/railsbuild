@@ -4,7 +4,7 @@
 RAILSBUILD_VERSION=0.4
 
 # Fedora master branch
-FEDORA_RAWHIDE=26
+FEDORA_RAWHIDE=28
 
 # Ruby on Rails gems
 GEMS=(activesupport
@@ -20,4 +20,20 @@ GEMS=(activesupport
 
 # Gems that needs to be rebuild without bootstrapping
 BOOTSTRAPPED_GEMS=(actionview
-                   actionpack)
+                   actionpack
+                   railties)
+
+getlog () {
+  local mylog=""
+
+  grep -i '^Acti' <<< "$1" &>/dev/null && {
+    mylog="`cut -c7- <<< "$1"`"
+    mylog="`cut -c-6 <<< "$1"` ${mylog^}"
+  } || {
+    mylog="$1"
+  }
+
+  mylog="Update to ${mylog^} $2."
+  mylog="`tr -s ' ' <<< "$mylog"`"
+  echo "$mylog"
+}

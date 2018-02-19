@@ -35,3 +35,5 @@ else
   git clone https://github.com/rails/rails.git
   popd
 fi
+
+exit 0

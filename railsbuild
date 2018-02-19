@@ -6,9 +6,10 @@
 # Automatic builds of Ruby on Rails core packages for Fedora Project
 #
 # Usage:
-#   ./railsbuild [-n] FEDORA_VERSION OLD_RAILS_VERSION NEW_RAILS_VERSION
+#   ./railsbuild [-n][-l] FEDORA_VERSION OLD_RAILS_VERSION NEW_RAILS_VERSION
 #
-#     -n  Do not run builds.  Useful for major version upgrades.
+#     -n  Do not run builds. Useful for major version upgrades.
+#     -l  Run local builds. Skip remote changes. Implies -n.
 #
 # Configuration file:
 #   railsbuild-common
@@ -28,6 +29,20 @@ fi
   shift
 } || NO_BUILD=
 
+# Option for not building
+[[ "$1" == "-l" ]] && {
+  LOCAL_BUILD=y
+  NO_BUILD=y
+  shift
+} || LOCAL_BUILD=
+
+[[ "${1:0:1}" == '-' ]] && {
+  echo "Error: unknown option '$1'"
+  print_help
+  exit 1
+
+}
+
 if [ "$3" = "" ] || [ "$2" = "" ] || [ "$1" = "" ]; then
   echo "Error: railsbuild takes 3 parameters"
   print_help
@@ -46,15 +61,20 @@ OLD_RAILS_VERSION=$2
 NEW_RAILS_VERSION=$3
 
 # Create directory structure and get the upstream repositories
-$(dirname $(readlink -e "$0"))/railsbuild-prepare $FEDORA_VERSION
+$(dirname $(readlink -e "$0"))/railsbuild-prepare $FEDORA_VERSION || exit 1
 
 # Get the test suites
-$(dirname $(readlink -e "$0"))/railsbuild-fetch-tests $FEDORA_VERSION $NEW_RAILS_VERSION
+$(dirname $(readlink -e "$0"))/railsbuild-fetch-tests $FEDORA_VERSION $NEW_RAILS_VERSION || exit 1
 
 # Update specs
-$(dirname $(readlink -e "$0"))/railsbuild-update-pkgs $FEDORA_VERSION $OLD_RAILS_VERSION $NEW_RAILS_VERSION
+$(dirname $(readlink -e "$0"))/railsbuild-update-pkgs $FEDORA_VERSION $OLD_RAILS_VERSION $NEW_RAILS_VERSION || exit 1
 
-# Run the build if not opted-out
+# Optional local builds run
+[[ "$LOCAL_BUILD" ]] && {
+  $(dirname $(readlink -e "$0"))/railsbuild-local-build $FEDORA_VERSION $NEW_RAILS_VERSION || exit 1
+}
+
+# Run the builds if not opted-out
 [[ "$NO_BUILD" ]] || {
-  $(dirname $(readlink -e "$0"))/railsbuild-build $FEDORA_VERSION $NEW_RAILS_VERSION
+  $(dirname $(readlink -e "$0"))/railsbuild-build $FEDORA_VERSION $NEW_RAILS_VERSION || exit 1
 }

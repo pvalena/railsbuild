@@ -56,7 +56,7 @@ do
         exit 1
       fi
 
-      git commit -am "Update to ${gem^} $VERSION"
+      git commit -am "`getlog $gem $VERSION`"
       git push
       fedpkg build
 
@@ -109,7 +109,7 @@ do
         exit 1
       fi
 
-      git commit -am "Enable tests"
+      git commit -am "Enable tests."
       git push
       fedpkg build
 
@@ -140,3 +140,5 @@ echo "Build of Ruby on Rails $VERSION for Fedora release $FEDORA_VERSION done."
 echo
 echo "Run the following to delete the build metadata:"
 echo "  rm ~/.railsbuild/f$FEDORA_VERSION/rubygem-*/.*built"
+
+exit 0

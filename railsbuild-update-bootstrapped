@@ -16,35 +16,31 @@ do
   echo "Building previously bootstrapped $gem:"
   pushd ~/.railsbuild/f$FEDORA_VERSION/rubygem-$gem/
 
-  EPOCH=`cat ./rubygem-$gem.spec | grep -E "Epoch:(.*)" | sed 's/Epoch: //'`
-  if [ "$EPOCH" ]; then
-    epoch_prefix="$EPOCH:"
-  else
-    epoch_prefix=""
-  fi
+    #EPOCH=`cat ./rubygem-$gem.spec | grep -E "Epoch:(.*)" | sed 's/Epoch: //'`
+    #if [ "$EPOCH" ]; then
+    #  epoch_prefix="$EPOCH:"
+    #else
+    #  epoch_prefix=""
+    #fi
 
-  # Disable bootstrapping
-  WITH_BOOTSTRAP="`sed -n 's/^%{?_with_bootstrap: \([^}]\+\)}[^\n]*/\1/p' rubygem-$gem.spec`"
-  [[ "$WITH_BOOTSTRAP" ]] || {
-    echo "= FAIL ======"
-    echo "$gem: _with_bootstrap macro is missing"
-    exit 1
-  }
-  sed -i "/^$WITH_BOOTSTRAP$/d" rubygem-$gem.spec
-  sed -i -e "s/Release:.*/Release: 2%{?dist}/g" rubygem-$gem.spec
+    # Disable bootstrapping
+    WITH_BOOTSTRAP="`sed -n 's/^%{?_with_bootstrap: \([^}]\+\)}[^\n]*/\1/p' rubygem-$gem.spec`"
+    [[ "$WITH_BOOTSTRAP" ]] || {
+      echo "= FAIL ======"
+      echo "$gem: _with_bootstrap macro is missing"
+      exit 1
+    }
 
-  # Set to default locale for the changelog date format
-  export LC_ALL=C
+    # Bootstrapping no already disabled
+    [[ -n "`sed -n "/^$WITH_BOOTSTRAP$/p" rubygem-$gem.spec`" ]] && {
+      sed -i "/^$WITH_BOOTSTRAP$/d" rubygem-$gem.spec
 
-  CHANGELOG='* '
-  CHANGELOG+=`date +'%a %b %d %Y'`
-  CHANGELOG+=" "
-  CHANGELOG+=`rpmdev-packager`
-  CHANGELOG+=" - $epoch_prefix$NEW_VERSION-2\n"
-  CHANGELOG+="- Enable tests"
+      # Set to default locale for the changelog date format
+      LC_ALL=C.UTF-8 rpmdev-bumpspec -c "Enable tests." rubygem-$gem.spec
 
-  sed -i -e "s/%changelog/%changelog\n$CHANGELOG\n/g" rubygem-$gem.spec
-
-  echo "$gem: rubygem-$gem.spec updated"
+      echo "$gem: rubygem-$gem.spec updated"
+    }
   popd
 done
+
+exit 0
