@@ -32,9 +32,12 @@ do
     # Skip already done builds
     if [ -f .built ]; then
       echo "$gem: build for $gem already done"
-      mock -n -i ./result/rubygem-$gem-*.{x86_64,noarch}.rpm
-      mock -n -i ./result/rubygem-$gem-*.x86_64.rpm
-      mock -n -i ./result/rubygem-$gem-*.noarch.rpm
+
+      mock -n -i ./result/rubygem-$gem-*.noarch.rpm || {
+        echo "= FAIL ======"
+        echo "$gem: Failed to install rpm files"
+        exit 1
+      }
       continue
     fi
 
@@ -77,9 +80,11 @@ do
         echo "= SUCCESS ======"
         echo "$gem: git commit of rubygem-$gem succeeded"
         touch .built
-        mock -n -i ./result/rubygem-$gem-*.{x86_64,noarch}.rpm || {
-          mock -n -i ./result/rubygem-$gem-*.x86_64.rpm
-          mock -n -i ./result/rubygem-$gem-*.noarch.rpm
+
+        mock -n -i ./result/rubygem-$gem-*.noarch.rpm || {
+          echo "= FAIL ======"
+          echo "$gem: Failed to install rpm files"
+          exit 1
         }
       else
         echo "= FAIL ======"
