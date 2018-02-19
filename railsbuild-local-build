@@ -1,0 +1,159 @@
+#!/usr/bin/bash
+# Run Rails local build of new packages.
+#
+# Done builds are marked by .build in the repository, so running
+# this script after it failed will pick up the work from the last run.
+#
+# Usage:
+#   ./railsbuild-local-build FEDORA_VERSION VERSION
+
+. $(dirname $(readlink -f "$0"))/railsbuild-common
+
+FEDORA_VERSION=$1
+VERSION=$2
+
+ls ~/.railsbuild/f$FEDORA_VERSION/rubygem-*/.built && echo "*: skipping mock init" || {
+  mock --init
+
+  if [ ! "$?" = "0" ]; then
+    echo "= FAIL ======"
+    echo "*: mock init failed"
+    exit 1
+  fi
+
+  echo "= SUCCESS ======"
+  echo "*: mock init succeeded"
+
+}
+
+for gem in "${GEMS[@]}"
+do
+  pushd ~/.railsbuild/f$FEDORA_VERSION/rubygem-$gem
+    # Skip already done builds
+    if [ -f .built ]; then
+      echo "$gem: build for $gem already done"
+      mock -n -i ./result/rubygem-$gem-*.{x86_64,noarch}.rpm
+      mock -n -i ./result/rubygem-$gem-*.x86_64.rpm
+      mock -n -i ./result/rubygem-$gem-*.noarch.rpm
+      continue
+    fi
+
+    # Check changelog in spec file for same EVR
+    if [ -n "$(
+      sed -n '/^%changelog/,$p' rubygem-$gem.spec \
+        | grep -E " [0-9]+\:[0-9]+\.[0-9]+\.[0-9]+\-[0-9]+$" \
+        | head -n 2 | rev | cut -d' ' -f1 \
+        | sort | uniq -c | grep -vE "^[ ]*1 "
+      )" ]; then
+        echo "= FAIL ======"
+        echo "$gem: same EVR in changelog already exists"
+        exit 1
+    fi
+
+    rm *.src.rpm
+    fedpkg srpm
+
+    if [ $? -eq 0 ]; then
+      git stash
+      echo "= SUCCESS ======"
+      echo "$gem: creating srpm of rubygem-$gem succeeded"
+
+      [[ -d ./result ]] && rm -rf ./result
+      mock --nocheck --installdeps -n -q rubygem-$gem-*.src.rpm &>/dev/null
+      sleep 1
+      ( sleep 5 && mock -n -q --chroot "echo > /etc/resolv.conf" ; ) &
+      mock -n --offline --resultdir=./result rubygem-$gem-*.src.rpm
+
+      if [ ! "$?" = "0" ]; then
+        echo "= FAIL ======"
+        echo "$gem: mock build failed"
+        exit 1
+      fi
+
+      fedpkg import rubygem-$gem-*.src.rpm
+      git commit -am "`getlog $gem $VERSION`"
+
+      if [ "$?" = "0" ]; then
+        echo "= SUCCESS ======"
+        echo "$gem: git commit of rubygem-$gem succeeded"
+        touch .built
+        mock -n -i ./result/rubygem-$gem-*.{x86_64,noarch}.rpm || {
+          mock -n -i ./result/rubygem-$gem-*.x86_64.rpm
+          mock -n -i ./result/rubygem-$gem-*.noarch.rpm
+        }
+      else
+        echo "= FAIL ======"
+        echo "$gem: git commit of rubygem-$gem failed"
+        exit 1
+      fi
+    else
+      echo "= FAIL ======"
+      echo "$gem: creating srpm of rubygem-$gem failed"
+      exit 1
+    fi
+
+  popd
+done
+
+# Update bootsrapped gems
+$(dirname $(readlink -f "$0"))/railsbuild-update-bootstrapped $FEDORA_VERSION $VERSION
+
+# Build bootsrapped gems again
+for gem in "${BOOTSTRAPPED_GEMS[@]}"
+do
+  pushd ~/.railsbuild/f$FEDORA_VERSION/rubygem-$gem
+    # Skip already done builds
+    if [ -f .built_2 ]; then
+      echo "$gem: final local build for bootsrapped $gem already done"
+      continue
+    fi
+    rm *.src.rpm
+    fedpkg srpm
+
+    if [ "$?" = "0" ]; then
+      git stash
+      echo "= SUCCESS ======"
+      echo "$gem: creating srpm of rubygem-$gem succeeded"
+
+      [[ -d ./result ]] && rm -rf ./result
+      mock --nocheck --installdeps -n -q rubygem-$gem-*.src.rpm &>/dev/null
+      sleep 1
+      ( sleep 5 && mock -n -q --chroot "echo > /etc/resolv.conf" ; ) &
+      mock -n --offline --resultdir=./result rubygem-$gem-*.src.rpm
+
+      if [ ! "$?" = "0" ]; then
+        echo "= FAIL ======"
+        echo "$gem: mock build failed"
+        exit 1
+      fi
+
+      fedpkg import rubygem-$gem-*.src.rpm
+      git commit -am "Enable tests."
+
+      if [ "$?" = "0" ]; then
+        echo "= SUCCESS ======"
+        echo "$gem: bootstrap commit of rubygem-$gem succeeded"
+        touch .built_2
+      else
+        echo "= FAIL ======"
+        echo "$gem: bootstrap commit of rubygem-$gem failed"
+        exit 1
+      fi
+    else
+      echo "= FAIL ======"
+      echo "$gem: creating srpm of rubygem-$gem failed"
+      exit 1
+    fi
+
+  popd
+done
+
+echo
+echo
+echo "= SUCCESSFULLY DONE ====="
+echo "Local build of Ruby on Rails $VERSION for Fedora release $FEDORA_VERSION done."
+echo
+echo "Run the following to delete the build metadata:"
+echo "  rm ~/.railsbuild/f$FEDORA_VERSION/rubygem-*/.*built"
+
+exit 0
