@@ -15,12 +15,14 @@ GEMS=(activesupport
       actionpack
       actionmailer
       actioncable
+      activestorage
       railties
       rails)
 
 # Gems that needs to be rebuild without bootstrapping
 BOOTSTRAPPED_GEMS=(actionview
                    actionpack
+                   activestorage
                    railties)
 
 getlog () {
