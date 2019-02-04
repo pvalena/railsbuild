@@ -4,7 +4,7 @@
 RAILSBUILD_VERSION=0.4
 
 # Fedora master branch
-FEDORA_RAWHIDE=29
+FEDORA_RAWHIDE=30
 
 # Ruby on Rails gems
 GEMS=(activesupport
